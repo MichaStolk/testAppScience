@@ -1,0 +1,14 @@
+[project]
+name = "fitscience"
+version = "1.0.0"
+description = "Offline trainings- en voedingscoach"
+requires-python = ">=3.10"
+dependencies = ["flet>=1.0"]
+
+[tool.flet]
+product = "FitScience"
+org = "nl.mijnnaam"          # pas aan naar iets unieks
+company = "Prive"
+
+[tool.flet.app]
+path = "."
