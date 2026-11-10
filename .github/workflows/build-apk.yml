@@ -1,0 +1,68 @@
+# Bouwt automatisch de Android-app (APK) én de webversie, en zet de webversie online.
+# Starten: tabblad "Actions" → "Build app" → "Run workflow" (of gewoon main.py wijzigen).
+name: Build app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # ---------- Webversie → GitHub Pages ----------
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Flet installeren
+        run: pip install "flet[all]==1.1.2"
+      - name: Webversie bouwen
+        run: >
+          flet build web --yes --log-format github
+          --base-url "${{ github.event.repository.name }}"
+          --pwa-short-name FitScience
+          --pwa-theme-color "#00897B" --pwa-background-color "#121212"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  # ---------- Android-app (APK) ----------
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Flet installeren
+        run: pip install "flet[all]==1.1.2"
+      - name: APK bouwen
+        run: flet build apk --yes --log-format github --build-number ${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FitScience-apk
+          path: build/apk/*.apk
+          if-no-files-found: error
